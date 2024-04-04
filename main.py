@@ -1,34 +1,56 @@
 import os
 import json
+import verify
 from serialize import serialize_tx
-from util import double_sha256
+from util import double_sha256, compute_weight_units, calculate_transaction_fees, verify_tx, serialize_coinbase, compute_block_header
 
-# START
+#cannot exceed more than 4 million weight units, and the block header contributes counts for 320 weight units
+MAX_BLOCK_WEIGHT = 3999680
 mempool_dir = './mempool'
 # Get a list of all files in the mempool_dir
-transactions = os.listdir(mempool_dir)
-# print("Verifying ", len(transactions), "transactions...")
+txid_to_sat_per_wu = {}
 
-
-with open('output.txt', 'w') as output:
-    # First line: The block header.
-    output.write('04000000795012fe4313db18725bf4e3c96908f3f99147bca7cd4f010000000000000000a676193ad9ba98b698a83932e2588147058bfe733d89f562962636e343a5839ed95168564fe60d182ef82329')
-    output.write('\n')
-    # Second line: The serialized coinbase transaction.
-    output.write('010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9edfaa194df59043645ba0f58aad74bfd5693fa497093174d12a4bb3b0574a878db0120000000000000000000000000000000000000000000000000000000000000000000000000')
-    output.write('\n')
-    # Following lines: The transaction IDs (txids) of the transactions mined in the block, in order. The first txid should be that of the coinbase transaction
-    #(need to print coinbase tx)
-
-    counter = 0
-    for filename in os.listdir(mempool_dir):
-        filepath = os.path.join(mempool_dir, filename)
-        with open(filepath, 'r') as file:
-            tx_data = json.load(file)
+for filename in os.listdir(mempool_dir):
+    filepath = os.path.join(mempool_dir, filename)
+    with open(filepath, 'r') as file:
+        tx_data = json.load(file)
+        if verify_tx(tx_data) == True:
             raw_tx = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
             tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
-            output.write(tx_id)
-            output.write('\n')
-            counter += 1
-            if(counter == 100):
-                break
+            if 'witness' in tx_data:
+                sat_per_wu = calculate_transaction_fees(tx_data) / compute_weight_units(raw_tx, tx_data['witness'])
+            else:
+                sat_per_wu = calculate_transaction_fees(tx_data) / compute_weight_units(raw_tx)
+            
+            txid_to_sat_per_wu[tx_id] = sat_per_wu
+
+#sort valid transactions by satoshis / weight unit
+txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1]))
+#select transactions with constraint of max block weight units
+running_wu = 0
+txids_in_block = []
+coinbase_serialized = serialize_coinbase()
+txids_in_block.append(coinbase_serialized)
+
+# Iterate through the map items
+for key, value in txid_to_sat_per_wu.items():
+    running_wu += value
+    if running_wu >= MAX_BLOCK_WEIGHT:
+        break
+    txids_in_block.append(key)
+
+#mines the block
+block_header = compute_block_header(txids_in_block)
+
+#write everything to file output.txt for grader
+with open('output.txt', 'w') as output:
+    # First line: The block header.
+    output.write(block_header)
+    output.write('\n')
+    # Second line: The serialized coinbase transaction.
+    output.write(coinbase_serialized)
+    output.write('\n')
+    # Following lines: The transaction IDs (txids) of the transactions mined in the block, in order. The first txid should be that of the coinbase transaction
+    for txid in txids_in_block:
+        output.write(txid)
+        output.write('\n')
