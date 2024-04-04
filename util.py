@@ -1,9 +1,9 @@
 import hashlib
 import struct
+import verify
 from ecdsa import SECP256k1, VerifyingKey, BadSignatureError
 import serialize
-
-
+import time
 
 def double_sha256(data):
     hash1 = hashlib.sha256(data).digest()
@@ -139,7 +139,6 @@ def validate_multisig(inner_script, curr_input, curr_witness, tx_data, witness, 
     else:
         raise BadSignatureError("not enough signatures")
 
-
 #test these eventually:
 def serialize_witness(witness):
     num_items = int_to_compact_size(len(witness))
@@ -154,14 +153,83 @@ def serialize_witness(witness):
 def compute_weight_units(serialized_tx, witness_field = []):
     non_witness_weight = (len(serialized_tx) / 2) * 4
     serialized_witness = serialize_witness(witness_field)
-    witness_weight = len(serialized_witness) / 2 * 1
-    return non_witness_weight + witness_weight + 2 # +2 for marker and flag
+
+    if witness_field == []:
+        witness_weight = 0
+    else:
+        witness_weight = len(serialized_witness) / 2 * 1
+    return non_witness_weight + witness_weight # +2 for marker and flag possibly
 
 def calculate_transaction_fees(transaction):
     total_input = sum(vin['prevout']['value'] for vin in transaction['vin'])
     total_output = sum([vout['value'] for vout in transaction['vout']])
     fees = total_input - total_output
     return fees
+
+def verify_tx(tx_data):
+
+    for i in range(0, len(tx_data['vin'])):
+        scriptpubkey_type = tx_data['vin'][i]['prevout']['scriptpubkey_type']
+        try:
+            if scriptpubkey_type == 'p2pkh':
+                verify.verify_p2pkh(tx_data, i)
+            elif scriptpubkey_type == 'p2sh':
+                verify.verify_p2sh(tx_data, i)
+            elif scriptpubkey_type == 'v0_p2wsh':
+                verify.verify_p2wsh(tx_data, i)
+            elif scriptpubkey_type == 'v0_p2wpkh':
+                verify.verify_p2wpkh(tx_data, i)
+            elif scriptpubkey_type == 'v1_p2tr': #TODO: try to verify p2tr
+                return True
+        except:
+            return False
+    return True
+
+def serialize_coinbase():
+    return '010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9edfaa194df59043645ba0f58aad74bfd5693fa497093174d12a4bb3b0574a878db0120000000000000000000000000000000000000000000000000000000000000000000000000'
+
+def compute_merkle_root(items):
+    if len(items) == 0:
+        return None
+    
+    # Encode items
+    hashes = [item.encode() for item in items]
+    while len(hashes) > 1:
+        # If the number of hashes is odd, duplicate the last hash
+        if len(hashes) % 2 == 1:
+            hashes.append(hashes[-1])
+        
+        pairs = [hashes[i] + hashes[i + 1] for i in range(0, len(hashes), 2)]
+        hashes = [hashlib.sha256(pair).digest() for pair in pairs]
+    
+    return hashes[0].hex()
+
+#mines the block
+def compute_block_header(txids_in_block):
+    difficulty = '0000ffff00000000000000000000000000000000000000000000000000000000'
+    max_nonce = (2 ** 32) - 1
+
+    #Version 4 byte little endian
+    version = '04000000'
+    #Previous Block 32 byte natural byte order, use fixed block 00000000000000000000a7cfc860d0488c8ad4a72b2de3ef1340a989a3fbd559
+    prev_block = '59d5fba389a94013efe32d2ba7d48a8c48d060c8cfa700000000000000000000'
+    #Merkle Root 32 byte natural byte order, of all transactions
+    merkle_tx = compute_merkle_root(txids_in_block)
+    #Time 4 bytes little endian (Unix timestamp)
+    timestamp = int(time.time()).to_bytes(4, byteorder='little').hex()
+    #Bits 4 bytes little endian, corresponds to the difficulty
+    bits = '1f00ffff'
+    for i in range(0, max_nonce):
+        #Nonce 4 bytes little endian
+        nonce = i.to_bytes(4, byteorder='little').hex()
+
+        candidate_header = version + prev_block + merkle_tx + timestamp + bits + nonce
+        candidate_header_hash = double_sha256(bytes.fromhex(candidate_header)).hex()
+        if(int(candidate_header_hash, 16) < int(difficulty, 16)):
+            return candidate_header
+
+    print("not under required difficulty")
+    return None
 
 # tests
 # der_sig = "304402202c31662db969bbeb98e3a759583833a85f76de94253d3bcd1e551b38e49bff380220071d7b4a47a6ec28f2fa191aa606c32506bd1c8b0b89482c965870717145cc6b01"
