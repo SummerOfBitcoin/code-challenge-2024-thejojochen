@@ -53,7 +53,8 @@ with open('output.txt', 'w') as output:
     output.write('\n')
     # Following lines: The transaction IDs (txids) of the transactions mined in the block, in order. The first txid should be that of the coinbase transaction
     for txid in txids_in_block:
-        output.write(txid)
+        txid_rev = [''.join([item[i:i+2] for i in range(0, len(item), 2)][::-1]) for item in txid]
+        output.write(txid_rev)
         output.write('\n')
 
 
