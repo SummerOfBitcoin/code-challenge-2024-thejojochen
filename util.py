@@ -227,6 +227,11 @@ def compute_block_header(txids_in_block):
         candidate_header_hash = double_sha256(bytes.fromhex(candidate_header)).hex()
         candidate_header_hashrev = ''.join([candidate_header_hash[i:i+2] for i in range(0, len(candidate_header_hash), 2)][::-1])
         if(int(candidate_header_hashrev, 16) < int(difficulty, 16)):
+            
+            print("candidate header raw:", candidate_header)
+            print("candidate header hash:", candidate_header_hash)
+            print("candidate header rev:", candidate_header_hashrev)
+            print("candidate header int:", int(candidate_header_hash, 16))
             return candidate_header
 
     print("not under required difficulty")
