@@ -192,7 +192,8 @@ def compute_merkle_root(items):
     if len(items) == 0:
         return None
     
-    # encode items
+    # reverse and encode items
+    items =  [''.join([item[i:i+2] for i in range(0, len(item), 2)][::-1]) for item in items]
     hashes = [bytes.fromhex(item) for item in items]
     while len(hashes) > 1:
         # If the number of hashes is odd, duplicate the last hash
