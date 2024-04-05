@@ -218,8 +218,8 @@ def compute_block_header(txids_in_block):
     merkle_tx = compute_merkle_root(txids_in_block)
     #Time 4 bytes little endian (Unix timestamp)
     timestamp = int(time.time()).to_bytes(4, byteorder='little').hex()
-    #Bits 4 bytes little endian, corresponds to the difficulty
-    bits = '1f00ffff'
+    #Bits 4 bytes little endian, corresponds to the difficulty, this is '1f00ffff' before converting to little endian
+    bits = 'ffff001f'
     for i in range(0, max_nonce):
         #Nonce 4 bytes little endian
         nonce = i.to_bytes(4, byteorder='little').hex()
