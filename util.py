@@ -201,7 +201,7 @@ def compute_merkle_root(items):
             hashes.append(hashes[-1])
         
         pairs = [hashes[i] + hashes[i + 1] for i in range(0, len(hashes), 2)]
-        hashes = [hashlib.sha256(pair).digest() for pair in pairs]
+        hashes = [double_sha256(pair) for pair in pairs]
     
     return hashes[0].hex()
 
