@@ -30,8 +30,8 @@ for filename in os.listdir(mempool_dir):
 
 #sort valid transactions by satoshis / weight unit
 txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1]))
-#select transactions with constraint of max block weight units
-running_wu = 0
+#select transactions with constraint of max block weight units, the coinbase tx weight = 718
+running_wu = 718
 txids_in_block = []
 coinbase_serialized = serialize_coinbase()
 coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
@@ -43,6 +43,8 @@ for key in txid_to_sat_per_wu:
     if running_wu >= MAX_BLOCK_WEIGHT:
         break
     txids_in_block.append(key)
+
+print("running block weight: ", running_wu)
 
 #reverse all tx_ids
 txids_in_block = [''.join([txid[i:i+2] for i in range(0, len(txid), 2)][::-1]) for txid in txids_in_block]
