@@ -9,6 +9,7 @@ MAX_BLOCK_WEIGHT = 3999680
 mempool_dir = './mempool'
 # Get a list of all files in the mempool_dir
 txid_to_sat_per_wu = {}
+txid_to_wu = {}
 
 for filename in os.listdir(mempool_dir):
     filepath = os.path.join(mempool_dir, filename)
@@ -18,11 +19,14 @@ for filename in os.listdir(mempool_dir):
             raw_tx = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
             tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
             if 'witness' in tx_data:
-                sat_per_wu = calculate_transaction_fees(tx_data) / compute_weight_units(raw_tx, tx_data['witness'])
+                weight_units = compute_weight_units(raw_tx, tx_data['witness'])
+                sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
             else:
-                sat_per_wu = calculate_transaction_fees(tx_data) / compute_weight_units(raw_tx)
+                weight_units = compute_weight_units(raw_tx)
+                sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
             
             txid_to_sat_per_wu[tx_id] = sat_per_wu
+            txid_to_wu[tx_id] = weight_units
 
 #sort valid transactions by satoshis / weight unit
 txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1]))
@@ -34,8 +38,8 @@ coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
 txids_in_block.append(coinbase_tx_id)
 
 # Iterate through the map items
-for key, value in txid_to_sat_per_wu.items():
-    running_wu += value
+for key in txid_to_sat_per_wu:
+    running_wu += txid_to_wu[key]
     if running_wu >= MAX_BLOCK_WEIGHT:
         break
     txids_in_block.append(key)
