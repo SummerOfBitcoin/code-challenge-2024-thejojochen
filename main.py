@@ -5,7 +5,7 @@ from serialize import serialize_tx
 from util import double_sha256, compute_weight_units, calculate_transaction_fees, verify_tx, serialize_coinbase, compute_block_header
 
 #cannot exceed more than 4 million weight units, and the block header contributes counts for 320 weight units
-MAX_BLOCK_WEIGHT = 3999680 - 250000
+MAX_BLOCK_WEIGHT = 3999680
 mempool_dir = './mempool'
 # Get a list of all files in the mempool_dir
 txid_to_sat_per_wu = {}
@@ -16,14 +16,12 @@ for filename in os.listdir(mempool_dir):
     with open(filepath, 'r') as file:
         tx_data = json.load(file)
         if verify_tx(tx_data) == True:
-            raw_tx = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
+            raw_tx, serialized_witness = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
             tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
-            if 'witness' in tx_data:
-                weight_units = compute_weight_units(raw_tx, tx_data['witness'])
-                sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
-            else:
-                weight_units = compute_weight_units(raw_tx)
-                sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
+
+            weight_units = compute_weight_units(raw_tx, serialized_witness)
+            sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
+
             
             txid_to_sat_per_wu[tx_id] = sat_per_wu
             txid_to_wu[tx_id] = weight_units

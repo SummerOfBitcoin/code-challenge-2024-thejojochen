@@ -26,8 +26,10 @@ def int_to_compact_size(num):
     
     elif(253 <= num <= 65535):
         return "fd" + num.to_bytes(2, byteorder='little').hex()
-
-    else: raise ValueError("num is too large")
+    
+    elif(65536 <= num <= 4294967295):
+        return "fe" + num.to_bytes(4, byteorder='little').hex()
+    else: raise ValueError("num is too large:", num)
 
 #TODO: implement some error checking for decoding der encoded signatures
 def der_to_rawsig(der_sig):
@@ -145,16 +147,15 @@ def serialize_witness(witness):
     serialized_witness = num_items
 
     for item in witness:
-        serialized_witness += int_to_compact_size(len(item) / 2)
+        serialized_witness += int_to_compact_size(int(len(item) / 2))
         serialized_witness += item
     
     return serialized_witness
 
-def compute_weight_units(serialized_tx, witness_field = []):
+def compute_weight_units(serialized_tx, serialized_witness = ''):
     non_witness_weight = (len(serialized_tx) / 2) * 4
-    serialized_witness = serialize_witness(witness_field)
 
-    if witness_field == []:
+    if serialized_witness == '':
         witness_weight = 0
     else:
         witness_weight = len(serialized_witness) / 2 * 1
