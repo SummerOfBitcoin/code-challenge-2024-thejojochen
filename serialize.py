@@ -1,12 +1,13 @@
 import os
 import json
 from hashlib import sha256
-from util import double_sha256, int_to_compact_size
+from util import double_sha256, int_to_compact_size, serialize_witness
 
 def serialize_tx(version_dec, inputs, outputs, locktime_dec):
 
     inputs_serialized = []
     outputs_serialized = []
+    witnesses_serialized = ''
 
     #version in 4 byte little endian
     version = version_dec.to_bytes(4, byteorder='little').hex()
@@ -33,6 +34,9 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
 
         inputs_serialized.append(txid + vout + script_sig_size + script_sig + sequence)
 
+        if 'witness' in inputs[i]:
+            witnesses_serialized += (serialize_witness(inputs[i]['witness']))
+
     len_outputs = len(outputs)
     output_count = int_to_compact_size(len_outputs)
 
@@ -50,8 +54,9 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
     locktime = locktime_dec.to_bytes(4, byteorder='little').hex()
     raw_inputs = ''.join(inputs_serialized)
     raw_outputs = ''.join(outputs_serialized)
+
     raw_tx = version + input_count + raw_inputs + output_count + raw_outputs + locktime
-    return raw_tx
+    return raw_tx, witnesses_serialized
 
     # print("Version: ", version, "of type ", type(version))
     # print("Input Count: ", input_count, "of type ", type(input_count))
@@ -68,6 +73,7 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
     # print(outputs_serialized)
     # print("Locktime: ", locktime, "of type", type(locktime))
 
+#for ecdsa signature verification of segwit transactions
 def serialize_segwit_msg(tx_data, hashtype, curr_input, witness_script = "", is_p2wsh = False):
 
     #nVersion of the transaction (4-byte little endian) (reusable)
@@ -151,7 +157,7 @@ for filename in os.listdir(mempool_dir):
     with open(filepath, 'r') as file:
         tx_data = json.load(file)
         
-        raw_tx = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
+        raw_tx, serialized_witnesses = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
         tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
         # print(raw_tx == '')
 
