@@ -20,14 +20,14 @@ for filename in os.listdir(mempool_dir):
             tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
 
             weight_units = compute_weight_units(raw_tx, serialized_witness)
-            sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
-
+            print(filename, "has",  weight_units, "weight units")
             
+            sat_per_wu = calculate_transaction_fees(tx_data) / weight_units
             txid_to_sat_per_wu[tx_id] = sat_per_wu
             txid_to_wu[tx_id] = weight_units
 
 #sort valid transactions by satoshis / weight unit
-txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1]))
+txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1], reverse=True))
 #select transactions with constraint of max block weight units, the coinbase tx weight = 718
 running_wu = 718
 txids_in_block = []
@@ -41,9 +41,11 @@ for key in txid_to_sat_per_wu:
     if running_wu >= MAX_BLOCK_WEIGHT:
         break
     txids_in_block.append(key)
+    #print("add", key, "with weight", txid_to_sat_per_wu[key])
+    #print("running block weight: ", running_wu)
 
 print("running block weight: ", running_wu)
-
+print("break")
 #reverse all tx_ids
 txids_in_block = [''.join([txid[i:i+2] for i in range(0, len(txid), 2)][::-1]) for txid in txids_in_block]
 #mines the block
@@ -65,4 +67,4 @@ with open('output.txt', 'w') as output:
         if(i != len(txids_in_block) - 1):
             output.write('\n')
 
-
+print("num txids included:", len(txids_in_block))
