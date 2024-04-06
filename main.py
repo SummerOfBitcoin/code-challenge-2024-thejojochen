@@ -10,13 +10,14 @@ mempool_dir = './mempool'
 # Get a list of all files in the mempool_dir
 txid_to_sat_per_wu = {}
 txid_to_wu = {}
+txid_to_wtxid = {}
 
 for filename in os.listdir(mempool_dir):
     filepath = os.path.join(mempool_dir, filename)
     with open(filepath, 'r') as file:
         tx_data = json.load(file)
         if verify_tx(tx_data) == True:
-            raw_tx, serialized_witness = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
+            raw_tx, serialized_witness, raw_wtxid = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
             tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
 
             weight_units = compute_weight_units(raw_tx, serialized_witness)
@@ -25,15 +26,14 @@ for filename in os.listdir(mempool_dir):
 
             txid_to_sat_per_wu[tx_id] = sat_per_wu
             txid_to_wu[tx_id] = weight_units
+            txid_to_wtxid[tx_id] = double_sha256(bytes.fromhex(raw_wtxid)).hex()
 
 #sort valid transactions by satoshis / weight unit
 txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1], reverse=True))
 #select transactions with constraint of max block weight units, the coinbase tx weight = 718
 running_wu = 718
 txids_in_block = []
-coinbase_serialized = serialize_coinbase()
-coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
-txids_in_block.append(coinbase_tx_id)
+wtxids_in_block = []
 
 # Iterate through the map items
 for key in txid_to_sat_per_wu:
@@ -41,8 +41,15 @@ for key in txid_to_sat_per_wu:
     if running_wu >= MAX_BLOCK_WEIGHT:
         break
     txids_in_block.append(key)
+    wtxids_in_block.append(txid_to_wtxid[key])
     #print("add", key, "with weight", txid_to_sat_per_wu[key])
     #print("running block weight: ", running_wu)
+
+#insert all 0 wtxid for coinbase transaction
+wtxids_in_block.insert(0, '0000000000000000000000000000000000000000000000000000000000000000')
+coinbase_serialized = serialize_coinbase(wtxids_in_block)
+coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
+txids_in_block.insert(0, coinbase_tx_id)
 
 print("running block weight: ", running_wu)
 print("break")

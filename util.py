@@ -186,15 +186,14 @@ def verify_tx(tx_data):
             return False
     return True
 
-def serialize_coinbase():
-    return '01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9edfaa194df59043645ba0f58aad74bfd5693fa497093174d12a4bb3b0574a878db0120000000000000000000000000000000000000000000000000000000000000000000000000'
-
-def compute_merkle_root(items):
+def compute_merkle_root(items, natural):
     if len(items) == 0:
         return None
     
-    # reverse and encode items
-    items =  [''.join([item[i:i+2] for i in range(0, len(item), 2)][::-1]) for item in items]
+    # reverse items if input is not in natural order
+    if natural == False:
+        items =  [''.join([item[i:i+2] for i in range(0, len(item), 2)][::-1]) for item in items]
+
     hashes = [bytes.fromhex(item) for item in items]
     while len(hashes) > 1:
         # If the number of hashes is odd, duplicate the last hash
@@ -206,6 +205,16 @@ def compute_merkle_root(items):
     
     return hashes[0].hex()
 
+def serialize_coinbase(wtxids_in_block):
+
+    #compute the wtxid commitment
+    witness_reserved_value = '0000000000000000000000000000000000000000000000000000000000000000'
+    witness_root_hash = compute_merkle_root(wtxids_in_block, True)
+    wtxid_commitment = double_sha256(bytes.fromhex(witness_root_hash + witness_reserved_value)).hex()
+
+    return '010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9ed' + wtxid_commitment + '0120000000000000000000000000000000000000000000000000000000000000000000000000'
+
+
 #mines the block
 def compute_block_header(txids_in_block):
     difficulty = '0000ffff00000000000000000000000000000000000000000000000000000000'
@@ -216,7 +225,7 @@ def compute_block_header(txids_in_block):
     #Previous Block 32 byte natural byte order, use fixed block 00000000000000000000a7cfc860d0488c8ad4a72b2de3ef1340a989a3fbd559
     prev_block = '59d5fba389a94013efe32d2ba7d48a8c48d060c8cfa700000000000000000000'
     #Merkle Root 32 byte natural byte order, of all transactions
-    merkle_tx = compute_merkle_root(txids_in_block)
+    merkle_tx = compute_merkle_root(txids_in_block, False)
     #Time 4 bytes little endian (Unix timestamp)
     timestamp = int(time.time()).to_bytes(4, byteorder='little').hex()
     #Bits 4 bytes little endian, corresponds to the difficulty, this is '1f00ffff' before converting to little endian

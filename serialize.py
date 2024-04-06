@@ -56,7 +56,8 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
     raw_outputs = ''.join(outputs_serialized)
 
     raw_tx = version + input_count + raw_inputs + output_count + raw_outputs + locktime
-    return raw_tx, witnesses_serialized
+    raw_wtxid = version + input_count + raw_inputs + output_count + raw_outputs + witnesses_serialized + locktime
+    return raw_tx, witnesses_serialized, raw_wtxid
 
     # print("Version: ", version, "of type ", type(version))
     # print("Input Count: ", input_count, "of type ", type(input_count))
@@ -157,7 +158,7 @@ for filename in os.listdir(mempool_dir):
     with open(filepath, 'r') as file:
         tx_data = json.load(file)
         
-        raw_tx, serialized_witnesses = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
+        raw_tx, _ , _ = serialize_tx(tx_data['version'], tx_data['vin'], tx_data['vout'], tx_data['locktime'])
         tx_id = double_sha256(bytes.fromhex(raw_tx)).hex()
         # print(raw_tx == '')
 
