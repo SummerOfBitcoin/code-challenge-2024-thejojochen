@@ -5,7 +5,7 @@ from serialize import serialize_tx
 from util import double_sha256, compute_weight_units, calculate_transaction_fees, verify_tx, serialize_coinbase, compute_block_header
 
 #cannot exceed more than 4 million weight units, and the block header contributes counts for 320 weight units
-MAX_BLOCK_WEIGHT = 3999680 - 10000
+MAX_BLOCK_WEIGHT = 3999680 - 100000
 mempool_dir = './mempool'
 # Get a list of all files in the mempool_dir
 txid_to_sat_per_wu = {}
