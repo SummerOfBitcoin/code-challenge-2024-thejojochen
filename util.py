@@ -159,7 +159,7 @@ def compute_weight_units(serialized_tx, serialized_witness = ''):
         witness_weight = 0
     else:
         witness_weight = len(serialized_witness) / 2 * 1
-    return non_witness_weight + witness_weight # +2 for marker and flag possibly
+    return non_witness_weight + witness_weight  + 2 #for marker and flag possibly
 
 def calculate_transaction_fees(transaction):
     total_input = sum(vin['prevout']['value'] for vin in transaction['vin'])
