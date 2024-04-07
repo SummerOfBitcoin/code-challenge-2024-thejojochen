@@ -45,9 +45,9 @@ for key in txid_to_sat_per_wu:
     #print("add", key, "with weight", txid_to_sat_per_wu[key])
     #print("running block weight: ", running_wu)
 
-#insert all 0 wtxid for coinbase transaction and reverse the wtxids
+#insert all 0 wtxid for coinbase transaction keep wtxids in natural byte order
 wtxids_in_block.insert(0, '0000000000000000000000000000000000000000000000000000000000000000')
-wtxids_in_block = [''.join([wtxid[i:i+2] for i in range(0, len(wtxid), 2)][::-1]) for wtxid in wtxids_in_block]
+#wtxids_in_block = [''.join([wtxid[i:i+2] for i in range(0, len(wtxid), 2)][::-1]) for wtxid in wtxids_in_block]
 coinbase_serialized = serialize_coinbase(wtxids_in_block)
 coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
 txids_in_block.insert(0, coinbase_tx_id)
