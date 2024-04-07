@@ -54,9 +54,11 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
     locktime = locktime_dec.to_bytes(4, byteorder='little').hex()
     raw_inputs = ''.join(inputs_serialized)
     raw_outputs = ''.join(outputs_serialized)
+    marker = '00'
+    flag = '01'
 
     raw_tx = version + input_count + raw_inputs + output_count + raw_outputs + locktime
-    raw_wtxid = version + input_count + raw_inputs + output_count + raw_outputs + witnesses_serialized + locktime
+    raw_wtxid = version + marker + flag + input_count + raw_inputs + output_count + raw_outputs + witnesses_serialized + locktime
     return raw_tx, witnesses_serialized, raw_wtxid
 
     # print("Version: ", version, "of type ", type(version))
