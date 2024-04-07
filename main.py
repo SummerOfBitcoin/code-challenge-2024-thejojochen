@@ -49,6 +49,7 @@ for key in txid_to_sat_per_wu:
 wtxids_in_block.insert(0, '0000000000000000000000000000000000000000000000000000000000000000')
 #wtxids_in_block = [''.join([wtxid[i:i+2] for i in range(0, len(wtxid), 2)][::-1]) for wtxid in wtxids_in_block]
 coinbase_serialized = serialize_coinbase(wtxids_in_block)
+print('coinbase serialized:', coinbase_serialized)
 coinbase_tx_id = double_sha256(bytes.fromhex(coinbase_serialized)).hex()
 txids_in_block.insert(0, coinbase_tx_id)
 
