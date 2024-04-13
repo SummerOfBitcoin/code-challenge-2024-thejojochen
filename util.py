@@ -209,7 +209,7 @@ def serialize_coinbase(wtxids_in_block):
 
     #compute the wtxid commitment
     witness_reserved_value = '0000000000000000000000000000000000000000000000000000000000000000'
-    witness_root_hash = compute_merkle_root(wtxids_in_block, True)
+    witness_root_hash = compute_merkle_root(wtxids_in_block, False)
     root_concat_reserved = witness_root_hash + witness_reserved_value
     wtxid_commitment = double_sha256(bytes.fromhex(root_concat_reserved)).hex()
     print('wtxid commitment:', wtxid_commitment, 'from concatanated:', root_concat_reserved)
