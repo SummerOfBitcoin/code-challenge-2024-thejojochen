@@ -27,6 +27,8 @@ for filename in os.listdir(mempool_dir):
             txid_to_sat_per_wu[tx_id] = sat_per_wu
             txid_to_wu[tx_id] = weight_units
             txid_to_wtxid[tx_id] = double_sha256(bytes.fromhex(raw_wtxid)).hex()
+            # print('filename', filename, 'has raw wtxid', raw_wtxid, 'and txid natural order', double_sha256(bytes.fromhex(raw_wtxid)).hex())
+            # break
 
 #sort valid transactions by satoshis / weight unit
 txid_to_sat_per_wu = dict(sorted(txid_to_sat_per_wu.items(), key=lambda item: item[1], reverse=True))
