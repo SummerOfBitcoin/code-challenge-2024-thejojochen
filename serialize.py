@@ -62,7 +62,7 @@ def serialize_tx(version_dec, inputs, outputs, locktime_dec):
     if witnesses_serialized == '':
         raw_wtxid = raw_tx
     else:
-        raw_wtxid = version + marker + flag + input_count + raw_inputs + output_count + raw_outputs  + locktime + witnesses_serialized
+        raw_wtxid = version + marker + flag + input_count + raw_inputs + output_count + raw_outputs + witnesses_serialized + locktime
         
     return raw_tx, witnesses_serialized, raw_wtxid
 
