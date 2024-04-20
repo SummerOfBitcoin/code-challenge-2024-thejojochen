@@ -161,6 +161,8 @@ def compute_weight_units(serialized_tx, serialized_witness = ''):
         witness_weight = len(serialized_witness) / 2 * 1
     return non_witness_weight + witness_weight # +2 for marker and flag possibly
 
+witness_root_hash_ = 'e29dae7805f321593fa6084e62d43bdb24fa3e18506ec91ce81e55d2fe4662b7'
+
 def calculate_transaction_fees(transaction):
     total_input = sum(vin['prevout']['value'] for vin in transaction['vin'])
     total_output = sum([vout['value'] for vout in transaction['vout']])
@@ -210,7 +212,8 @@ def serialize_coinbase(wtxids_in_block):
     #compute the wtxid commitment
     witness_reserved_value = '0000000000000000000000000000000000000000000000000000000000000000'
     witness_root_hash = compute_merkle_root(wtxids_in_block, True)
-    root_concat_reserved = witness_root_hash + witness_reserved_value
+    print('witness_root_hash: ', witness_root_hash)
+    root_concat_reserved = witness_root_hash_ + witness_reserved_value
     wtxid_commitment = double_sha256(bytes.fromhex(root_concat_reserved)).hex()
     print('wtxid commitment:', wtxid_commitment, 'from concatanated:', root_concat_reserved)
     return '010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9ed' + wtxid_commitment + '0120000000000000000000000000000000000000000000000000000000000000000000000000'
