@@ -79,3 +79,7 @@ with open('output.txt', 'w') as output:
 
 print("num txids included:", len(txids_in_block))
 
+
+
+
+
