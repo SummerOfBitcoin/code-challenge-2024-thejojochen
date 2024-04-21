@@ -161,7 +161,7 @@ def compute_weight_units(serialized_tx, serialized_witness = ''):
         witness_weight = len(serialized_witness) / 2 * 1
     return non_witness_weight + witness_weight # +2 for marker and flag possibly
 
-witness_root_hash_ = 'e29dae7805f321593fa6084e62d43bdb24fa3e18506ec91ce81e55d2fe4662b7'
+witness_root_hash_ = '65aef0baf06975ec779fc72ff8721fd404c7c34d4e6aa064dd24854727680785'
 
 def calculate_transaction_fees(transaction):
     total_input = sum(vin['prevout']['value'] for vin in transaction['vin'])
